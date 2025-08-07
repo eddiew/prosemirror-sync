@@ -113,6 +113,7 @@ export function syncExtension(
   opts?: UseSyncOptions
 ): AnyExtension {
   const log: typeof console.log = opts?.debug ? console.debug : () => {};
+  let synced = false;
   let snapshotTimer: NodeJS.Timeout | undefined;
   let pendingSnapshot:
     | { id: string; version: number; content: string }
@@ -188,8 +189,8 @@ export function syncExtension(
       active = false;
       if (pending) {
         const { resolve, reject } = pending;
-        pending = undefined;
         console.log("pending", pending);
+        pending = undefined;
         trySync(editor).then(resolve, reject);
       }
     }
@@ -213,6 +214,7 @@ export function syncExtension(
       if (initialState.restoredSteps?.length) {
         // TODO: verify that restoring local steps works
         log("Restoring local steps", initialState.restoredSteps);
+        console.log("restoring local steps", initialState.restoredSteps);
         const tr = this.editor.state.tr;
         for (const step of initialState.restoredSteps) {
           tr.step(Step.fromJSON(this.editor.schema, step));
