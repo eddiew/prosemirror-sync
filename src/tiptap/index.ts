@@ -113,7 +113,6 @@ export function syncExtension(
   opts?: UseSyncOptions
 ): AnyExtension {
   const log: typeof console.log = opts?.debug ? console.debug : () => {};
-  let synced = false;
   let snapshotTimer: NodeJS.Timeout | undefined;
   let pendingSnapshot:
     | { id: string; version: number; content: string }
@@ -189,7 +188,6 @@ export function syncExtension(
       active = false;
       if (pending) {
         const { resolve, reject } = pending;
-        console.log("pending", pending);
         pending = undefined;
         trySync(editor).then(resolve, reject);
       }
@@ -214,7 +212,6 @@ export function syncExtension(
       if (initialState.restoredSteps?.length) {
         // TODO: verify that restoring local steps works
         log("Restoring local steps", initialState.restoredSteps);
-        console.log("restoring local steps", initialState.restoredSteps);
         const tr = this.editor.state.tr;
         for (const step of initialState.restoredSteps) {
           tr.step(Step.fromJSON(this.editor.schema, step));
@@ -260,7 +257,6 @@ async function doSync(
       // a local cache. Creating a new document on the client will set the
       // initial version to 1 optimistically.
       log("Syncing new document", { id });
-      console.log("!!!!!!");
       await convex.mutation(syncApi.submitSnapshot, {
         id,
         version: initialState.initialVersion,
@@ -287,6 +283,7 @@ async function doSync(
       steps.steps.map((step) => Step.fromJSON(editor.schema, JSON.parse(step))),
       steps.clientIds
     );
+    return false;
   }
   let anyChanges = false;
   while (true) {
@@ -297,7 +294,6 @@ async function doSync(
     const steps = sendable.steps
       .slice(0, MAX_STEPS_SYNC)
       .map((step) => JSON.stringify(step.toJSON()));
-    console.log("steps", steps);
     log("Sending steps", { steps, version: sendable.version });
     const result = await convex.mutation(syncApi.submitSteps, {
       id,
@@ -305,7 +301,6 @@ async function doSync(
       version: sendable.version,
       clientId: sendable.clientID,
     });
-    console.log("result", result);
     if (result.status === "synced") {
       anyChanges = true;
       // We replay the steps locally to avoid refetching them.
